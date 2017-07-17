@@ -9,6 +9,7 @@
 #include "threaded-canvas-manipulator.h"
 #include "transformer.h"
 #include "graphics.h"
+#include "SuperSign.h"
 
 #include <assert.h>
 #include <getopt.h>
@@ -472,6 +473,38 @@ private:
   int** values_;
   int** newValues_;
   int delay_ms_;
+};
+
+// Taxi supersign
+class TaxiSupersign : public ThreadedCanvasManipulator {
+private:
+  SuperSign* _superSign;
+  int _width;
+  int _height;
+public:
+  TaxiSupersign(Canvas *m) 
+    : ThreadedCanvasManipulator(m) {
+    _superSign = new SuperSign();  
+    _width = canvas()->width();
+    _height = canvas()->height();
+  }
+  ~TaxiSupersign() {
+    delete _superSign;
+  }
+    
+  void Run() {
+    while (running() && !interrupt_received) {
+      auto simulation = _superSign->simulate();
+      for (int x = 0; x < _width; ++x) {
+        for (int y = 0; y < _height; ++y) {
+          auto info = simulation.at(y).at(x);
+          canvas()->SetPixel(x, y, info.red, info.green, info.blue);
+        }
+      }      
+      // 2FPS
+      usleep(500 * 1000); // ms
+    }
+  }
 };
 
 
@@ -1223,6 +1256,8 @@ int main(int argc, char *argv[]) {
   case 11:
     image_gen = new BrightnessPulseGenerator(matrix);
     break;
+  case 12:
+    image_gen = new TaxiSupersign(canvas);
   }
 
   if (image_gen == NULL)
