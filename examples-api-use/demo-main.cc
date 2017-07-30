@@ -18,8 +18,10 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <unistd.h>
-
+#include <sys/ioctl.h>
+#include <linux/joystick.h>
 #include <algorithm>
 
 using std::min;
@@ -27,6 +29,7 @@ using std::max;
 
 #define TERM_ERR  "\033[1;31m"
 #define TERM_NORM "\033[0m"
+#define JOY_DEV "/dev/input/js0"
 
 using namespace rgb_matrix;
 
@@ -34,6 +37,8 @@ volatile bool interrupt_received = false;
 static void InterruptHandler(int signo) {
   interrupt_received = true;
 }
+
+int joy_fd = -1;
 
 /*
  * The following are demo image generators. They all use the utility
@@ -481,12 +486,18 @@ private:
   SuperSign* _superSign;
   int _width;
   int _height;
+  int num_of_buttons;
+  std::vector<char> joy_button;
 public:
   TaxiSupersign(Canvas *m) 
-    : ThreadedCanvasManipulator(m) {
+    : ThreadedCanvasManipulator(m)
+    , num_of_buttons(0) {
     _superSign = new SuperSign();  
     _width = canvas()->width();
     _height = canvas()->height();
+    ioctl(joy_fd, JSIOCGBUTTONS, &num_of_buttons);
+    joy_button.resize(num_of_buttons, 0);
+    fcntl(joy_fd, F_SETFL, O_NONBLOCK); // using non-blocking mode
   }
   ~TaxiSupersign() {
     delete _superSign;
@@ -494,6 +505,15 @@ public:
     
   void Run() {
     while (running() && !interrupt_received) {
+      js_event js;
+      read(joy_fd, &js, sizeof(js_event));
+      switch(js.type & ~JS_EVENT_INIT) {
+        case JS_EVENT_BUTTON:
+          joy_button[(int)js.number] = js.value;
+          fprintf(stderr,"push button[%d]=%d\n", (int)js.number, (int)js.value);
+          break;
+      }
+
       auto simulation = _superSign->simulate();
       for (int x = 0; x < _width; ++x) {
         for (int y = 0; y < _height; ++y) {
@@ -501,6 +521,10 @@ public:
           canvas()->SetPixel(x, y, info.red, info.green, info.blue);
         }
       }      
+      if(joy_button[3] > 0) _superSign->input(0); // start
+      if(joy_button[5] > 0) _superSign->input(356); // right
+      if(joy_button[7] > 0) _superSign->input(358); // left
+
       // 2FPS
       usleep(500 * 1000); // ms
     }
@@ -1099,6 +1123,11 @@ int main(int argc, char *argv[]) {
   matrix_options.chain_length = 1;
   matrix_options.parallel = 1;
 
+  joy_fd = open(JOY_DEV, O_RDONLY);
+  if(joy_fd < 0) {
+    fprintf(stderr, "failed to open %s\n", JOY_DEV);
+  }
+
   // First things first: extract the command line flags that contain
   // relevant matrix options.
   if (!ParseOptionsFromFlags(&argc, &argv, &matrix_options, &runtime_opt)) {
@@ -1288,6 +1317,7 @@ int main(int argc, char *argv[]) {
   // Stop image generating thread. The delete triggers
   delete image_gen;
   delete canvas;
+  close(joy_fd);
 
   printf("\%s. Exiting.\n",
          interrupt_received ? "Received CTRL-C" : "Timeout reached");
