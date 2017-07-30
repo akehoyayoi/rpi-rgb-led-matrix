@@ -505,13 +505,16 @@ public:
     
   void Run() {
     while (running() && !interrupt_received) {
-      js_event js;
-      read(joy_fd, &js, sizeof(js_event));
-      switch(js.type & ~JS_EVENT_INIT) {
-        case JS_EVENT_BUTTON:
-          joy_button[(int)js.number] = js.value;
-          fprintf(stderr,"push button[%d]=%d\n", (int)js.number, (int)js.value);
-          break;
+
+      for(auto i = 0 ; i < 17 ; i++) {
+        js_event js;
+        read(joy_fd, &js, sizeof(js_event));
+        switch(js.type & ~JS_EVENT_INIT) {
+          case JS_EVENT_BUTTON:
+            joy_button[(int)js.number] = js.value;
+            fprintf(stderr,"push button[%d]=%d\n", (int)js.number, (int)js.value);
+            break;
+        }
       }
 
       auto simulation = _superSign->simulate();
@@ -521,9 +524,9 @@ public:
           canvas()->SetPixel(x, y, info.red, info.green, info.blue);
         }
       }      
-      if(joy_button[3] > 0) _superSign->input(0); // start
-      if(joy_button[5] > 0) _superSign->input(356); // right
-      if(joy_button[7] > 0) _superSign->input(358); // left
+      if(joy_button[3] > 0) _superSign->input(354); // start
+      if(joy_button[5] > 0) _superSign->input(358); // right
+      if(joy_button[7] > 0) _superSign->input(356); // left
 
       // 2FPS
       usleep(500 * 1000); // ms

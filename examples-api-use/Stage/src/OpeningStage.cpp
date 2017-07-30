@@ -55,7 +55,7 @@ std::array<std::array<std::array<DisplayInfo, windowWidth>, windowHeight>, 2> st
 
 void OpeningStage::input(int key)
 {
-    if(!isStart) {
+    if(!isStart && key == 354) {
         isStart = true;
         animeCount = 0;
     }
