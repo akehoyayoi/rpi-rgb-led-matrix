@@ -1,26 +1,26 @@
 //
-//  Enemy.hpp
+//  Gauge.h
 //  SupersignSimulator
 //
-//  Created by YOHEI OKAYA on 2017/07/11.
+//  Created by YOHEI OKAYA on 2017/07/22.
 //
 //
 
-#ifndef Enemy_hpp
-#define Enemy_hpp
+#ifndef Gauge_h
+#define Gauge_h
 
 #include "OverlayComponent.h"
+#include <functional>
 
-class Enemy : public OverlayComponent {
+class Gauge : public OverlayComponent {
 private:
-    int horizonPosition;
-    int verticalPosition;
+    int animationCount;
     std::array<std::array<DisplayInfo, windowWidth>, windowHeight> current;
+    std::function<void()> finishedCallback;
 public:
-    Enemy();
+    Gauge(std::function<void()> callback);
     virtual void input(int key);
     virtual std::array<std::array<DisplayInfo, windowWidth>, windowHeight>& simulate();
 };
 
-
-#endif /* Enemy_hpp */
+#endif /* Gauge_h */
