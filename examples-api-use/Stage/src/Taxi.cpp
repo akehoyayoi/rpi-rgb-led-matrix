@@ -27,7 +27,7 @@ Taxi::Taxi()
 void Taxi::input(int key)
 {
     if(key == 356 && currentPosition > 0) currentPosition--;
-    if(key == 358 && currentPosition < 22) currentPosition++;
+    if(key == 358 && currentPosition < 26) currentPosition++;
 }
 
 
