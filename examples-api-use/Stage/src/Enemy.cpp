@@ -9,25 +9,35 @@
 #include "../inc/Enemy.h"
 #include <random>
 
-const auto enemyWidth = 3;
+const auto enemyWidth = 4;
 const auto enemyHeight = 8;
 
 std::array<std::array<DisplayInfo, enemyWidth>, enemyHeight> enemy = {{
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
-    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}},
+    {{{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255},{0, 255, 0, 255}}}
 }};
 
-Enemy::Enemy()
-: horizonPosition(7)
+int randomPoint(int minimum, int maximum)
+{
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<int> dice(minimum, maximum);
+    return dice(mt);
+}
+
+Enemy::Enemy(int basePosition, int band)
+: basePosition(basePosition)
+, minimum(band * 0.2)
+, maximum(band * 0.8)
 , verticalPosition(0)
 {
-    
+    horizonPosition = basePosition + randomPoint(minimum, maximum);
 }
 
 void Enemy::input(int key)
@@ -62,11 +72,7 @@ std::array<std::array<DisplayInfo, windowWidth>, windowHeight>& Enemy::simulate(
     verticalPosition ++;
     if(verticalPosition > windowHeight + enemyHeight) {
         verticalPosition = 0;
-        // 6 - 24
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::uniform_int_distribution<int> dice(6,24);
-        horizonPosition = dice(mt);
+        horizonPosition = basePosition + randomPoint(minimum, maximum);
     }
     return current;
 }

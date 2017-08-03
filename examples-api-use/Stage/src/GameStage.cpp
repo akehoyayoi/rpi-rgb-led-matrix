@@ -10,6 +10,7 @@
 #include "../inc/GameStage.h"
 #include "../inc/GameClearStage.h"
 #include "../inc/GameOverStage.h"
+#include "../inc/GameWaypointStage.h"
 #include "../inc/Gauge.h"
 #include "../inc/SuperSign.h"
 
@@ -95,13 +96,16 @@ std::array<std::array<DisplayInfo, windowWidth>, windowHeight> b4 = {{
 
 std::array<std::array<std::array<DisplayInfo, windowWidth>, windowHeight>, 4> backgroudAnime = {b1,b2,b3,b4};
 
-GameStage::GameStage(SuperSign* _superSign)
+GameStage::GameStage(SuperSign* _superSign, int difficulty)
 : Stage(_superSign)
 , animeCount(0)
 , inGame(true)
 {
     overlays.push_back(std::make_shared<Taxi>());
-    overlays.push_back(std::make_shared<Enemy>());
+    const auto base = 32 / difficulty;
+    for(auto count = 0; count < difficulty; count++) {
+        overlays.push_back(std::make_shared<Enemy>(count * base, base));
+    }
     std::function<void()> funcGameClear = std::bind(&GameStage::gameClear, this);
     overlays.push_back(std::make_shared<Gauge>(funcGameClear));
 };
@@ -131,16 +135,16 @@ std::array<std::array<DisplayInfo, windowWidth>, windowHeight>& GameStage::simul
             }
         }
     }
-
-    if(overlays.size() < 3) return current;
     
     auto taxi = overlays.at(0);
-    auto enemy = overlays.at(1);
-    if(taxi->inContact(enemy->rectangle) && inGame) {
-        inGame = false;
-        auto r = enemy->rectangle;
-        std::function<void()> funcGameOver = std::bind(&GameStage::gameOver, this);
-        overlays.push_back(std::make_shared<Explosion>(r.left, r.top, funcGameOver));
+    for(auto overlay: overlays) {
+        auto enemy = std::dynamic_pointer_cast<Enemy>(overlay);
+        if(enemy != nullptr && taxi->inContact(enemy->rectangle) && inGame) {
+            inGame = false;
+            auto r = enemy->rectangle;
+            std::function<void()> funcGameOver = std::bind(&GameStage::gameOver, this);
+            overlays.push_back(std::make_shared<Explosion>(r.left, r.top, funcGameOver));
+        }
     }
     return current;
 }
@@ -153,5 +157,9 @@ void GameStage::gameOver()
 
 void GameStage::gameClear()
 {
-    superSign()->setStage(std::make_shared<GameClearStage>(superSign()));
+    if(overlays.size() > 3) { // difficulty > 1
+        superSign()->setStage(std::make_shared<GameClearStage>(superSign()));
+    } else {
+        superSign()->setStage(std::make_shared<GameWaypointStage>(superSign()));
+    }
 }
